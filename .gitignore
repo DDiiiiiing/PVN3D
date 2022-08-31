@@ -2,7 +2,6 @@
 ****/*.pkl
 ****__pycache__
 *****.pyc
-****/*.so
 ****/knn
 pvn3d/datasets/ycb/YCB_Video_Dataset
 pvn3d/datasets/linemod/Linemod_preprocessed
