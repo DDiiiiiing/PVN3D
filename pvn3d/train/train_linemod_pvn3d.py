@@ -5,6 +5,7 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from pickletools import optimize
 import torch
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_sched
@@ -364,10 +365,10 @@ class Trainer(object):
                     self.model.train()
 
                     if self.lr_scheduler is not None:
-                        self.lr_scheduler.step(it)
+                        self.lr_scheduler.step_new(it)
 
                     if self.bnm_scheduler is not None:
-                        self.bnm_scheduler.step(it)
+                        self.bnm_scheduler.step_new(it)
 
                     self.optimizer.zero_grad()
                     _, loss, res = self.model_fn(self.model, batch)
@@ -457,7 +458,10 @@ if __name__ == "__main__":
     ).cuda()
     model = convert_model(model)
     model.cuda()
-    optimizer = optim.Adam(
+    # optimizer = optim.Adam(
+    #     model.parameters(), lr=args.lr, weight_decay=args.weight_decay
+    # )
+    optimizer = optim.SGD(
         model.parameters(), lr=args.lr, weight_decay=args.weight_decay
     )
 
@@ -481,12 +485,18 @@ if __name__ == "__main__":
         model
     )
 
-    lr_scheduler = CyclicLR(
-        optimizer, base_lr=1e-5, max_lr=1e-3,
-        step_size=config.n_total_epoch * config.num_mini_batch_per_epoch // 6,
-        mode = 'triangular'
-    )
+    # lr_scheduler = CyclicLR(
+    #     optimizer, base_lr=1e-5, max_lr=1e-3,
+    #     step_size=config.n_total_epoch * config.num_mini_batch_per_epoch // 6,
+    #     mode = 'triangular'
+    # )
 
+    lr_scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer=optimizer,
+                                                     base_lr=1e-5, max_lr=1e-3,
+                                                     step_size_up=config.n_total_epoch * config.num_mini_batch_per_epoch // 12,
+                                                     mode='triangular',)
+                                                     
+    
     bnm_lmbd = lambda it: max(
         args.bn_momentum
         * args.bn_decay ** (int(it * config.mini_batch_size / args.decay_step)),
